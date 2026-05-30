@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Enter your code — Amphora</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #09090d;
+  --text: #f0ede8;
+  --dim: rgba(255,255,255,.82);
+  --dimmer: rgba(255,255,255,.50);
+  --border: rgba(240,237,232,.07);
+  --c1: #f06030;
+  --c2: #f03d78;
+  --c3: #b840b8;
+  --grad: linear-gradient(135deg, #f06030 0%, #f03d78 52%, #b840b8 100%);
+  --max: 840px;
+  --pad: clamp(20px, 6vw, 80px);
+}
+
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font: 400 16px/1.6 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+::-webkit-scrollbar { width: 2px; }
+::-webkit-scrollbar-thumb { background: var(--border); }
+
+/* ── Gradient utilities ── */
+.grad-text {
+  background: var(--grad);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Nav ── */
+nav {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--pad);
+  height: 60px;
+  background: rgba(9,9,13,.92);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -.01em;
+  color: var(--text);
+  text-decoration: none;
+}
+.logo-img {
+  height: 26px;
+  width: 26px;
+  flex-shrink: 0;
+  mix-blend-mode: screen;
+}
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  list-style: none;
+}
+.nav-links a {
+  font-size: 13px;
+  color: var(--dim);
+  text-decoration: none;
+  transition: color .15s;
+}
+.nav-links a:hover { color: var(--text); }
+
+/* ── Access page layout ── */
+.access-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 80px var(--pad) 60px;
+  min-height: 100vh;
+}
+
+/* ── Card ── */
+.access-card {
+  max-width: 420px;
+  width: 100%;
+  padding: 52px 48px;
+  border: 1px solid var(--border);
+  background: rgba(12,12,18,.98);
+  border-radius: 2px;
+}
+
+.card-eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--dimmer);
+  margin-bottom: 20px;
+}
+
+.access-card h1 {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -.02em;
+  line-height: 1.25;
+  margin-bottom: 14px;
+}
+
+.access-card .desc {
+  font-size: 14px;
+  font-weight: 300;
+  color: var(--dim);
+  line-height: 1.7;
+  margin-bottom: 28px;
+}
+
+/* ── Code input ── */
+.code-input {
+  display: block;
+  width: 100%;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+  font: inherit;
+  font-size: 15px;
+  padding: 14px 16px;
+  outline: none;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  margin-bottom: 12px;
+  transition: border-color .2s, box-shadow .2s;
+  border-radius: 0;
+}
+.code-input::placeholder {
+  color: var(--dimmer);
+  text-transform: none;
+  letter-spacing: 0;
+}
+.code-input:focus {
+  border-color: rgba(240,62,120,.35);
+  box-shadow: 0 0 0 3px rgba(240,62,120,.07);
+}
+
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  20%,60%  { transform: translateX(-6px); }
+  40%,80%  { transform: translateX(6px); }
+}
+
+/* ── Unlock button ── */
+.unlock-btn {
+  display: block;
+  width: 100%;
+  background: var(--grad);
+  color: #fff;
+  border: none;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 14px;
+  cursor: pointer;
+  letter-spacing: .02em;
+  transition: filter .15s;
+  border-radius: 0;
+  text-align: center;
+}
+.unlock-btn:hover { filter: brightness(1.12); }
+
+/* ── Error message ── */
+.access-error {
+  display: none;
+  font-size: 13px;
+  color: rgba(240,80,80,.7);
+  margin-top: 12px;
+  line-height: 1.55;
+}
+.access-error a {
+  color: rgba(240,80,80,.7);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* ── Below-form note ── */
+.access-note {
+  margin-top: 20px;
+  font-size: 11px;
+  color: var(--dimmer);
+  text-align: center;
+}
+.access-note a {
+  color: var(--dimmer);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: color .15s;
+}
+.access-note a:hover { color: var(--dim); }
+
+/* ── Footer ── */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 28px var(--pad);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+  max-width: calc(var(--max) + var(--pad) * 2);
+  margin: 0 auto;
+  width: 100%;
+}
+.footer-copy { font-size: 11px; color: var(--dimmer); }
+.footer-links { display: flex; gap: 20px; list-style: none; }
+.footer-links a {
+  font-size: 11px;
+  color: var(--dimmer);
+  text-decoration: none;
+  transition: color .15s;
+}
+.footer-links a:hover { color: var(--dim); }
+
+@media (max-width: 520px) {
+  .access-card { padding: 40px 24px; }
+  footer { flex-direction: column; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="logo" href="index.html">
+    <img class="logo-img" src="amphora_logo.png" alt="">
+    Amphora
+  </a>
+  <ul class="nav-links">
+    <li><a href="index.html#about">About</a></li>
+    <li><a href="blog.html">Blog</a></li>
+    <li><a href="index.html#waitlist">Get access</a></li>
+  </ul>
+</nav>
+
+<main class="access-wrap">
+  <div class="access-card">
+    <p class="card-eyebrow">Founding member access</p>
+    <h1>You've been approved.<br><span class="grad-text">Enter your code.</span></h1>
+    <p class="desc">Your invite code was sent to the email address you used to request access.</p>
+
+    <input
+      class="code-input"
+      id="codeInput"
+      type="text"
+      placeholder="e.g. AMPHORA-ALPHA"
+      autocomplete="off"
+      autocorrect="off"
+      spellcheck="false"
+    />
+
+    <button class="unlock-btn" id="unlockBtn" onclick="submitCode()">Unlock access →</button>
+
+    <div class="access-error" id="accessError">
+      Invalid code. Check your email or <a href="mailto:hello@amphora.ai">contact us</a>.
+    </div>
+
+    <p class="access-note">Don't have a code yet? <a href="index.html#waitlist">Request access →</a></p>
+  </div>
+</main>
+
+<footer>
+  <a class="logo" href="index.html">
+    <img class="logo-img" src="amphora_logo.png" alt="">
+    Amphora
+  </a>
+  <span class="footer-copy">© 2026 Amphora.</span>
+  <ul class="footer-links">
+    <li><a href="blog.html">Blog</a></li>
+    <li><a href="index.html#about">About</a></li>
+    <li><a href="mailto:hello@amphora.ai">Contact</a></li>
+  </ul>
+</footer>
+
+<script>
+/* ── Redirect if already granted ── */
+(function() {
+  if (localStorage.getItem('amphora_access') === 'granted') {
+    window.location.href = 'hidden.html';
+  }
+})();
+
+// Master codes — add or rotate here
+const VALID_CODES = ['AMPHORA-ALPHA', 'FOUNDER-2026', 'AMPHORA-2026'];
+
+function isValidCode(code) {
+  if (VALID_CODES.includes(code)) return true;
+  // Also accept any code generated during waitlist signup on this device
+  const map = JSON.parse(localStorage.getItem('amphora_codes') || '{}');
+  return Object.values(map).includes(code);
+}
+
+function submitCode() {
+  const input = document.getElementById('codeInput');
+  const errorEl = document.getElementById('accessError');
+  const code = input.value.trim().toUpperCase();
+
+  errorEl.style.display = 'none';
+
+  if (isValidCode(code)) {
+    localStorage.setItem('amphora_access', 'granted');
+    setTimeout(function() {
+      window.location.href = 'hidden.html';
+    }, 300);
+  } else {
+    errorEl.style.display = 'block';
+    input.style.animation = 'none';
+    input.offsetHeight;
+    input.style.animation = 'shake 400ms ease';
+    setTimeout(function() { input.style.animation = 'none'; }, 400);
+  }
+}
+
+/* Allow Enter key to submit */
+document.getElementById('codeInput').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') submitCode();
+});
+</script>
+</body>
+</html>

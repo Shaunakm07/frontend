@@ -22,10 +22,10 @@ export async function submitContact(data: {
   subject: string
   message: string
 }): Promise<{ ok: boolean }> {
-  const res = await fetch(`${SB_URL}/functions/v1/send-contact`, {
+  const res = await fetch(`${SB_URL}/rest/v1/contact_submissions`, {
     method: 'POST',
-    headers,
+    headers: { ...headers, Prefer: 'return=minimal' },
     body: JSON.stringify(data),
   })
-  return { ok: res.ok }
+  return { ok: res.status === 201 }
 }

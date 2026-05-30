@@ -1,0 +1,57 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --border: rgba(240, 237, 232, 0.07);
+  --dim: rgba(255, 255, 255, 0.82);
+  --dimmer: rgba(255, 255, 255, 0.5);
+  --grad: linear-gradient(135deg, #f06030 0%, #f03d78 52%, #b840b8 100%);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: #09090d;
+  color: #f0ede8;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+::-webkit-scrollbar {
+  width: 2px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+}
+
+@layer utilities {
+  .grad-text {
+    background: var(--grad);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .bg-grad {
+    background: var(--grad);
+  }
+
+  .border-amp {
+    border-color: var(--border);
+  }
+
+  /* Native chart utilities */
+  .hbar-fill-base {
+    background: rgba(99, 160, 210, 0.5);
+  }
+  .hbar-fill-lora {
+    background: linear-gradient(90deg, #f06030, #f03d78);
+    box-shadow: 0 0 7px rgba(240, 62, 120, 0.22);
+  }
+  .hbar-fill-ref {
+    background: rgba(155, 155, 155, 0.35);
+  }
+}

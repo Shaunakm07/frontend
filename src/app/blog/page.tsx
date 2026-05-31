@@ -4,6 +4,7 @@ import BlogGate from '@/components/BlogGate'
 import BlogPost from '@/components/BlogPost'
 import EvalSuiteBody from '@/components/posts/EvalSuiteBody'
 import BrainLLMBody from '@/components/posts/BrainLLMBody'
+import Phase2Body from '@/components/posts/Phase2Body'
 import { EmotionBody, FmriBody, WhyBody } from '@/components/posts/SimplePosts'
 import type { Metadata } from 'next'
 
@@ -13,13 +14,23 @@ export const metadata: Metadata = {
 
 const posts = [
   {
+    id: 'phase-2',
+    date: 'May 31, 2026',
+    tag: 'Research',
+    readTime: '14 min',
+    title: <>Phase 2: Multi-Region Rewards, Suppression, and Layer Ablation.<br />Five Experiments. One Headline Result.</>,
+    excerpt: 'We ran five targeted experiments on the Phase 1 brain-trained adapter: extending training to 500 steps (KL runaway at 280), reversing the reward to suppress Broca\'s area, running a composite Broca+Wernicke+STS reward that exceeded Phase 1\'s best score, optimising for the Default Mode Network, and ablating attention vs FFN contributions. The multi-region reward is the standout: higher reward, broader network activation, same qualitative style as Phase 1\'s best completion.',
+    initiallyOpen: true,
+    Body: Phase2Body,
+  },
+  {
     id: 'eval-suite',
     date: 'May 29, 2026',
     tag: 'Research',
     readTime: '10 min',
     title: <>The Brain-Trained Model Also Writes Better.<br />We Ran Five Benchmarks to Confirm It.</>,
     excerpt: 'We asked whether a language model fine-tuned on a brain reward signal also scores higher on standard NLP benchmarks — or whether neural quality and human-legible quality are orthogonal. We ran a five-experiment evaluation suite on the step-200 checkpoint: multi-criteria judge, style robustness, syntactic complexity, MMLU regression, and MAUVE. The answer is unambiguous.',
-    initiallyOpen: true,
+    initiallyOpen: false,
     Body: EvalSuiteBody,
   },
   {

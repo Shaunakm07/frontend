@@ -29,3 +29,30 @@ export async function submitContact(data: {
   })
   return { ok: res.status === 201 }
 }
+
+export async function getPostVisibility(): Promise<Record<string, boolean>> {
+  try {
+    const res = await fetch(`${SB_URL}/rest/v1/post_visibility?select=id,visible`, {
+      headers,
+      cache: 'no-store',
+    })
+    if (!res.ok) return {}
+    const rows = (await res.json()) as { id: string; visible: boolean }[]
+    return Object.fromEntries(rows.map(r => [r.id, r.visible]))
+  } catch {
+    return {}
+  }
+}
+
+export async function setPostVisible(id: string, visible: boolean): Promise<{ ok: boolean }> {
+  try {
+    const res = await fetch(`${SB_URL}/rest/v1/post_visibility`, {
+      method: 'POST',
+      headers: { ...headers, Prefer: 'resolution=merge-duplicates,return=minimal' },
+      body: JSON.stringify({ id, visible, updated_at: new Date().toISOString() }),
+    })
+    return { ok: res.ok }
+  } catch {
+    return { ok: false }
+  }
+}

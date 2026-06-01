@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { ALL_POSTS, HIDDEN_POSTS_KEY, getHiddenIds, setHiddenIds } from '@/lib/posts'
+import { ALL_POSTS } from '@/lib/posts'
+import { getPostVisibility, setPostVisible } from '@/lib/supabase'
 
 const TAG_COLORS: Record<string, string> = {
   Research: 'rgba(240,62,120,0.75)',
@@ -16,51 +17,65 @@ export default function AdminPage() {
   const [authed, setAuthed] = useState(false)
   const [password, setPassword] = useState('')
   const [shake, setShake] = useState(false)
-  const [hiddenIds, setHiddenIdsState] = useState<string[]>([])
-  const [saved, setSaved] = useState(false)
+  // visible[id] = true means shown, false means hidden
+  const [visibility, setVisibility] = useState<Record<string, boolean>>({})
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState<string | null>(null)
+  const [lastSaved, setLastSaved] = useState<string | null>(null)
+
+  const fetchVisibility = useCallback(async () => {
+    setLoading(true)
+    const data = await getPostVisibility()
+    // default to visible if row doesn't exist yet
+    const merged: Record<string, boolean> = {}
+    for (const p of ALL_POSTS) merged[p.id] = data[p.id] ?? true
+    setVisibility(merged)
+    setLoading(false)
+  }, [])
 
   useEffect(() => {
     if (localStorage.getItem('amphora_admin') === 'yes') {
       setAuthed(true)
-      setHiddenIdsState(getHiddenIds())
+      fetchVisibility()
+    } else {
+      setLoading(false)
     }
-  }, [])
+  }, [fetchVisibility])
 
   function handleLogin(e: React.FormEvent) {
     e.preventDefault()
     if (password.trim().toUpperCase() === 'AMPHORA-ADMIN') {
       localStorage.setItem('amphora_admin', 'yes')
       setAuthed(true)
-      setHiddenIdsState(getHiddenIds())
+      fetchVisibility()
     } else {
       setShake(true)
       setTimeout(() => setShake(false), 400)
     }
   }
 
-  function toggle(id: string) {
-    setHiddenIdsState(prev => {
-      const next = prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
-      setHiddenIds(next)
-      setSaved(true)
-      setTimeout(() => setSaved(false), 1800)
-      return next
-    })
+  async function toggle(id: string) {
+    const next = !visibility[id]
+    setVisibility(prev => ({ ...prev, [id]: next }))
+    setSaving(id)
+    const { ok } = await setPostVisible(id, next)
+    setSaving(null)
+    if (ok) {
+      setLastSaved(id)
+      setTimeout(() => setLastSaved(null), 2000)
+    } else {
+      // revert on failure
+      setVisibility(prev => ({ ...prev, [id]: !next }))
+    }
   }
 
-  function showAll() {
-    setHiddenIds([])
-    setHiddenIdsState([])
-    setSaved(true)
-    setTimeout(() => setSaved(false), 1800)
-  }
-
-  function hideAll() {
-    const ids = ALL_POSTS.map(p => p.id)
-    setHiddenIds(ids)
-    setHiddenIdsState(ids)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 1800)
+  async function bulkSet(visible: boolean) {
+    const next: Record<string, boolean> = {}
+    for (const p of ALL_POSTS) next[p.id] = visible
+    setVisibility(next)
+    await Promise.all(ALL_POSTS.map(p => setPostVisible(p.id, visible)))
+    setLastSaved('all')
+    setTimeout(() => setLastSaved(null), 2000)
   }
 
   function signOut() {
@@ -107,11 +122,10 @@ export default function AdminPage() {
     )
   }
 
-  const visibleCount = ALL_POSTS.length - hiddenIds.length
+  const visibleCount = Object.values(visibility).filter(Boolean).length
 
   return (
     <div className="min-h-screen">
-      {/* Header */}
       <nav className="fixed inset-x-0 top-0 z-30 flex items-center justify-between h-[60px] px-[clamp(16px,5vw,60px)] border-b border-[rgba(240,237,232,0.07)] bg-[rgba(9,9,13,0.96)] backdrop-blur-[14px]">
         <div className="flex items-center gap-2.5">
           <Image src="/amphora_logo.png" alt="Amphora" width={22} height={22} style={{ mixBlendMode: 'screen' }} />
@@ -128,51 +142,50 @@ export default function AdminPage() {
         </div>
       </nav>
 
-      {/* Content */}
       <div className="max-w-[640px] mx-auto px-[clamp(20px,6vw,60px)] pt-[96px] pb-[80px]">
-        {/* Title + stats */}
         <div className="mb-8">
           <h1 className="text-[22px] font-bold tracking-[-0.02em] mb-1">Blog posts</h1>
           <p className="text-[13px] text-white/40 font-light">
-            {visibleCount} of {ALL_POSTS.length} posts visible on{' '}
-            <a href="/blog" target="_blank" className="text-white/55 underline underline-offset-2 hover:text-white/75 transition-colors">/blog</a>.
-            Changes save instantly.
+            {loading ? 'Loading…' : `${visibleCount} of ${ALL_POSTS.length} posts visible on `}
+            {!loading && (
+              <a href="/blog" target="_blank" className="text-white/55 underline underline-offset-2 hover:text-white/75 transition-colors">/blog</a>
+            )}
+            {!loading && '. Changes go live for all visitors immediately.'}
           </p>
         </div>
 
-        {/* Bulk actions */}
         <div className="flex items-center gap-3 mb-6">
           <button
-            onClick={showAll}
+            onClick={() => bulkSet(true)}
             className="text-[11px] font-semibold tracking-[0.05em] uppercase px-3.5 py-1.5 border border-[rgba(240,237,232,0.1)] text-white/50 hover:text-white/80 hover:border-[rgba(240,237,232,0.22)] transition-all duration-150 bg-transparent cursor-pointer"
           >
             Show all
           </button>
           <button
-            onClick={hideAll}
+            onClick={() => bulkSet(false)}
             className="text-[11px] font-semibold tracking-[0.05em] uppercase px-3.5 py-1.5 border border-[rgba(240,237,232,0.1)] text-white/50 hover:text-white/80 hover:border-[rgba(240,237,232,0.22)] transition-all duration-150 bg-transparent cursor-pointer"
           >
             Hide all
           </button>
           <span
             className="text-[11px] text-[rgba(240,62,120,0.7)] ml-auto transition-opacity duration-300"
-            style={{ opacity: saved ? 1 : 0 }}
+            style={{ opacity: lastSaved ? 1 : 0 }}
             aria-live="polite"
           >
-            ✓ Saved
+            ✓ Live
           </span>
         </div>
 
-        {/* Post list */}
         <div className="border border-[rgba(240,237,232,0.07)]">
-          {ALL_POSTS.map((post, i) => {
-            const isHidden = hiddenIds.includes(post.id)
-            const isVisible = !isHidden
+          {ALL_POSTS.map(post => {
+            const isVisible = visibility[post.id] ?? true
+            const isSaving = saving === post.id
+
             return (
               <div
                 key={post.id}
                 className="flex items-start gap-5 px-6 py-5 border-b border-[rgba(240,237,232,0.07)] last:border-b-0 transition-colors duration-150"
-                style={{ background: isHidden ? 'rgba(0,0,0,0)' : 'rgba(240,237,232,0.012)' }}
+                style={{ background: isVisible ? 'rgba(240,237,232,0.012)' : 'transparent' }}
               >
                 {/* Toggle */}
                 <button
@@ -180,7 +193,8 @@ export default function AdminPage() {
                   aria-checked={isVisible}
                   aria-label={`${isVisible ? 'Hide' : 'Show'} "${post.title}"`}
                   onClick={() => toggle(post.id)}
-                  className="relative flex-shrink-0 mt-[2px] cursor-pointer bg-transparent border-none p-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[rgba(240,62,120,0.6)] rounded-full"
+                  disabled={loading || isSaving}
+                  className="relative flex-shrink-0 mt-[2px] cursor-pointer bg-transparent border-none p-0 disabled:opacity-50 disabled:cursor-wait focus-visible:outline focus-visible:outline-2 focus-visible:outline-[rgba(240,62,120,0.6)] rounded-full"
                 >
                   <span
                     className="block w-9 h-5 rounded-full transition-all duration-200"
@@ -197,12 +211,12 @@ export default function AdminPage() {
                 </button>
 
                 {/* Post info */}
-                <div className="flex-1 min-w-0" style={{ opacity: isHidden ? 0.38 : 1, transition: 'opacity 0.2s' }}>
+                <div className="flex-1 min-w-0" style={{ opacity: isVisible ? 1 : 0.38, transition: 'opacity 0.2s' }}>
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <span className="text-[11px] text-white/35 font-mono">{post.date}</span>
                     <span
                       className="text-[10px] font-semibold tracking-[0.07em] uppercase px-1.5 py-[2px] border border-[rgba(240,237,232,0.1)] rounded-[2px]"
-                      style={{ color: TAG_COLORS[post.tag] ?? 'rgba(240,237,232,0.4)', borderColor: 'rgba(240,237,232,0.1)' }}
+                      style={{ color: TAG_COLORS[post.tag] ?? 'rgba(240,237,232,0.4)' }}
                     >
                       {post.tag}
                     </span>
@@ -213,21 +227,17 @@ export default function AdminPage() {
                   </p>
                 </div>
 
-                {/* Status label */}
+                {/* Status */}
                 <span
                   className="text-[10px] font-semibold tracking-[0.06em] uppercase flex-shrink-0 mt-[3px] transition-colors duration-200"
-                  style={{ color: isVisible ? 'rgba(240,62,120,0.6)' : 'rgba(240,237,232,0.2)' }}
+                  style={{ color: isSaving ? 'rgba(240,237,232,0.25)' : isVisible ? 'rgba(240,62,120,0.6)' : 'rgba(240,237,232,0.2)' }}
                 >
-                  {isVisible ? 'Live' : 'Hidden'}
+                  {isSaving ? '…' : isVisible ? 'Live' : 'Hidden'}
                 </span>
               </div>
             )
           })}
         </div>
-
-        <p className="mt-5 text-[11px] text-white/25 leading-[1.6]">
-          Visibility is stored in your browser. Open <code className="text-white/35">/admin</code> on any device you use to manage posts from there too.
-        </p>
       </div>
     </div>
   )

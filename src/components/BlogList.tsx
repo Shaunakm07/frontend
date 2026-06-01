@@ -1,12 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import BlogPost from '@/components/BlogPost'
 import Phase2Body from '@/components/posts/Phase2Body'
 import EvalSuiteBody from '@/components/posts/EvalSuiteBody'
 import BrainLLMBody from '@/components/posts/BrainLLMBody'
 import { EmotionBody, FmriBody, WhyBody } from '@/components/posts/SimplePosts'
-import { ALL_POSTS, HIDDEN_POSTS_KEY, getHiddenIds } from '@/lib/posts'
+import { ALL_POSTS } from '@/lib/posts'
 
 const BODIES: Record<string, React.ComponentType> = {
   'phase-2': Phase2Body,
@@ -26,33 +25,14 @@ const EXCERPTS: Record<string, string> = {
   'why': "The generative AI industry has solved for realism and style. It has not solved for feeling. That gap is where Amphora lives.",
 }
 
-export default function BlogList() {
-  const [hiddenIds, setHiddenIds] = useState<string[]>([])
-  const [ready, setReady] = useState(false)
+export default function BlogList({ initialHiddenIds }: { initialHiddenIds: string[] }) {
+  const visible = ALL_POSTS.filter(p => !initialHiddenIds.includes(p.id))
 
-  useEffect(() => {
-    setHiddenIds(getHiddenIds())
-    setReady(true)
-
-    function onStorage(e: StorageEvent) {
-      if (e.key === HIDDEN_POSTS_KEY) {
-        try { setHiddenIds(JSON.parse(e.newValue || '[]')) } catch {}
-      }
-    }
-    window.addEventListener('storage', onStorage)
-    return () => window.removeEventListener('storage', onStorage)
-  }, [])
-
-  const visible = ALL_POSTS.filter(p => !hiddenIds.includes(p.id))
-
-  if (ready && visible.length === 0) {
+  if (visible.length === 0) {
     return (
       <div className="py-24 text-center">
-        <p className="text-[14px] text-white/40 font-light">All posts are currently hidden.</p>
-        <p className="text-[12px] text-white/30 mt-2">
-          Manage visibility at{' '}
-          <a href="/admin" className="underline underline-offset-2 hover:text-white/50 transition-colors">/admin</a>.
-        </p>
+        <p className="text-[14px] text-white/40 font-light">No posts are published yet.</p>
+        <p className="text-[12px] text-white/30 mt-2">Check back soon.</p>
       </div>
     )
   }

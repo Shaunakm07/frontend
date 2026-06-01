@@ -2,13 +2,22 @@ import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import BlogGate from '@/components/BlogGate'
 import BlogList from '@/components/BlogList'
+import { getPostVisibility } from '@/lib/supabase'
+import { ALL_POSTS } from '@/lib/posts'
 import type { Metadata } from 'next'
+
+export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
   title: 'Progress Notes — Amphora',
 }
 
-export default function BlogPage() {
+export default async function BlogPage() {
+  const visibility = await getPostVisibility()
+  const hiddenIds = ALL_POSTS
+    .filter(p => visibility[p.id] === false)
+    .map(p => p.id)
+
   return (
     <>
       <Nav />
@@ -23,7 +32,7 @@ export default function BlogPage() {
         </header>
 
         <div className="pb-[120px]">
-          <BlogList />
+          <BlogList initialHiddenIds={hiddenIds} />
         </div>
       </div>
       <Footer
